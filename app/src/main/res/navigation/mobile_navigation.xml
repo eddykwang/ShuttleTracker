@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@+id/navigation_dashboard">
 
   <fragment
       android:id="@+id/navigation_home"
@@ -15,23 +15,11 @@
       android:id="@+id/navigation_dashboard"
       android:name="com.studio.eddy.myapplication.ui.dashboard.DashboardFragment"
       android:label="@string/title_dashboard"
-      tools:layout="@layout/fragment_dashboard" >
-    <action
-        android:id="@+id/action_navigation_dashboard_to_navigation_home"
-        app:destination="@id/navigation_home"
-        app:enterAnim="@anim/nav_default_enter_anim"
-        app:exitAnim="@anim/nav_default_exit_anim" />
-  </fragment>
+      tools:layout="@layout/fragment_dashboard" />
 
   <fragment
       android:id="@+id/navigation_notifications"
       android:name="com.studio.eddy.myapplication.ui.notifications.MoreInfoFragment"
       android:label="@string/title_more"
-      tools:layout="@layout/fragment_more_info" >
-    <action
-        android:id="@+id/action_navigation_notifications_to_navigation_home"
-        app:destination="@id/navigation_home"
-        app:enterAnim="@anim/nav_default_enter_anim"
-        app:exitAnim="@anim/nav_default_exit_anim" />
-  </fragment>
+      tools:layout="@layout/fragment_more_info" />
 </navigation>

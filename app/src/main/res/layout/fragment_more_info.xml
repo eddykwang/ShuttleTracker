@@ -159,7 +159,7 @@
           android:focusable="true"
           android:gravity="center_vertical"
           android:padding="8dp"
-          android:text="Call shuttle office"
+          android:text="Call shuttle office: (858) 534-7422"
           />
 
       <View

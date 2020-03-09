@@ -83,14 +83,23 @@ class DashboardFragment : Fragment() {
         view: WebView,
         url: String
       ) {
-        real_time_swipe_refresh_bt.isRefreshing = false
+        if (real_time_web_view != null) {
+          real_time_swipe_refresh_bt.isRefreshing = false
+        }
       }
     }
   }
 
+  override fun onStop() {
+    super.onStop()
+    real_time_web_view.stopLoading()
+  }
+
   fun reloadPage() {
     //  hasInternet = false;
-    real_time_web_view.reload()
-    loading()
+    if (real_time_web_view != null) {
+      real_time_web_view.reload()
+      loading()
+    }
   }
 }

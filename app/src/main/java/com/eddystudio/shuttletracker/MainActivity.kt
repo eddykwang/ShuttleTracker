@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
   ) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     when (requestCode) {
-      LOCATION_REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+      LOCATION_REQUEST_CODE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
       ) {
         setUpGetCurrentLocation()
       } else {
@@ -88,6 +88,7 @@ class MainActivity : AppCompatActivity() {
 
   companion object {
     const val LOCATION_REQUEST_CODE = 4344
+    const val PHONE_CALL_REQUEST_CODE = 4311
 
   }
 
