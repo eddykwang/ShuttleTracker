@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@mipmap/ic_action_bus"
+            android:title="Real-time Departing" />
+        <item
+            android:id="@+id/nav_map"
+            android:icon="@mipmap/ic_action_map"
+            android:title="Route Map" />
+        <item
+            android:id="@+id/nav_sign"
+            android:icon="@mipmap/ic_action_sort_2"
+            android:title="Routs Detail" />
+        <item
+            android:id="@+id/nav_call"
+            android:icon="@mipmap/ic_action_phone_start"
+            android:title="Call Office" />
+    </group>
+
+<!--    <item android:title="Communicate">-->
+<!--        <menu>-->
+<!--            <item-->
+<!--                android:id="@+id/nav_facebook"-->
+<!--                android:icon="@mipmap/ic_action_facebook"-->
+<!--                android:title="Facebook" />-->
+<!--            <item-->
+<!--                android:id="@+id/nav_twitter"-->
+<!--                android:icon="@mipmap/ic_action_twitter"-->
+<!--                android:title="Twitter" />-->
+<!--            <item-->
+<!--                android:id="@+id/nav_share"-->
+<!--                android:icon="@mipmap/ic_action_share"-->
+<!--                android:title="Share" />-->
+<!--            <item-->
+<!--                android:id="@+id/nav_about"-->
+<!--                android:icon="@mipmap/ic_action_info"-->
+<!--                android:title="About" />-->
+<!--        </menu>-->
+<!--    </item>-->
+
+</menu>
