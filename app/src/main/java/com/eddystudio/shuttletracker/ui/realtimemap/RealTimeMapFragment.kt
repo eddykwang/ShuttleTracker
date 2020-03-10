@@ -21,9 +21,11 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.eddystudio.shuttletracker.R
 import com.eddystudio.shuttletracker.data.MySharedPreference
 import com.eddystudio.shuttletracker.data.model.Route
+import com.eddystudio.shuttletracker.ui.realtimemap.TrackerAdapter
 import com.eddystudio.shuttletracker.util.Util
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -38,6 +40,7 @@ import com.skydoves.powerspinner.OnSpinnerItemSelectedListener
 import com.studio.eddy.myapplication.dagger.MyApplication
 import kotlinx.android.synthetic.main.fragment_real_time_map.get_my_location_bt
 import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_recycler_view
 import java.util.Collections
 import java.util.Timer
 import java.util.TimerTask
@@ -55,6 +58,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private var isMarkerRotating = false
   private lateinit var vehicleTimerTask: TimerTask
   private lateinit var myLocation: LatLng
+
+  private val adapter: TrackerAdapter by lazy { TrackerAdapter() }
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -80,6 +85,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   }
 
   private fun initViews() {
+    initBottomSheetView()
     rout_search_bar.apply {
       this.lifecycleOwner = viewLifecycleOwner
       this.setOnSpinnerItemSelectedListener(object : OnSpinnerItemSelectedListener<String> {
@@ -109,6 +115,13 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
             )
         )
       }
+    }
+  }
+
+  private fun initBottomSheetView() {
+    bottom_sheet_recycler_view.apply {
+      layoutManager = LinearLayoutManager(context)
+      adapter = adapter
     }
   }
 
@@ -206,7 +219,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private fun drawVehiclesFroRout(id: String) {
     realTimeMapViewModel.getRutVehicles(id)
         .observe(viewLifecycleOwner, Observer {
-
+          adapter.setData(it)
+          bottom_sheet_recycler_view.adapter = adapter
           it.apply {
             if (vehicleMarks.isEmpty()) {
               forEach { routVechicle ->
@@ -259,7 +273,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
 
     val locationListener = object : LocationListener {
       override fun onLocationChanged(p0: Location?) {
-        if (p0 == null) return
+        if (p0 == null || context == null) return
         mMap.addMarker(
             MarkerOptions().position(LatLng(p0.latitude, p0.longitude))
                 .icon(
