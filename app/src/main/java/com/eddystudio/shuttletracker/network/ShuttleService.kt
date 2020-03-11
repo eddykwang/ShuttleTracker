@@ -1,5 +1,6 @@
 package com.studio.eddy.myapplication.network
 
+import com.eddystudio.shuttletracker.data.model.BusArrival
 import com.eddystudio.shuttletracker.data.model.RoutStop
 import com.eddystudio.shuttletracker.data.model.RoutVehicle
 import com.eddystudio.shuttletracker.data.model.Route
@@ -14,11 +15,17 @@ interface ShuttleService {
   fun getWayPoint(@Path("waypoint") waypoint: String): Call<List<List<RoutWayPoint>>>
 
   @GET("Region/0/Routes")
-  fun getRoutes(): Call<List<Route>>
+  fun getAllRoute(): Call<List<Route>>
 
   @GET("Route/{id}/Direction/10/Stops")
   fun getStopsForRout(@Path("id") id: String): Call<List<RoutStop>>
 
   @GET("Route/{id}/Vehicles")
   fun getRoutVehichles(@Path("id") id: String): Call<List<RoutVehicle>>
+
+  @GET("Vehicle/{stopId}/Arrivals?customerID=2")
+  fun getArrivalByStopId(@Path("stopId") stopId: String): Call<List<BusArrival>>
+
+  @GET("Stop/{stopId}/Routes")
+  fun getRoutesByStopId(@Path("stopId") stopId: String): Call<List<Route>>
 }

@@ -14,15 +14,13 @@ import kotlin.collections.ArrayList
 
 class RealTimeMapViewModel @Inject constructor(val repository: Repository) : ViewModel() {
 
-  private val wayPoint = MutableLiveData<List<LatLng>>()
-
   fun getWayPointLiveData(id: String): LiveData<List<LatLng>> {
-    val latLongList: ArrayList<LatLng> = ArrayList()
-
-    repository.getWayPoint(id)
-
-    return Transformations.map(repository.wayPointLiveData) {
-      it.map { LatLng(it.latitude, it.longitude) }
+    return Transformations.map(repository.getWayPoint(id)) { response ->
+      response.body()
+          ?.get(0)
+          ?.map {
+            LatLng(it.latitude, it.longitude)
+          }
     }
   }
 

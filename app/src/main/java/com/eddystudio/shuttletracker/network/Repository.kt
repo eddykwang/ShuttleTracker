@@ -16,31 +16,31 @@ import javax.inject.Singleton
 @Singleton
 class Repository @Inject constructor(private val shuttleService: ShuttleService) {
 
-  val wayPointLiveData: MutableLiveData<List<RoutWayPoint>> = MutableLiveData()
-  fun getWayPoint(routId: String) {
-    shuttleService.getWayPoint(routId)
-        .enqueue(object : Callback<List<List<RoutWayPoint>>> {
-          override fun onFailure(
-            call: Call<List<List<RoutWayPoint>>>,
-            t: Throwable
-          ) {
-            Log.e("repository", "get way point error", t)
-          }
+  fun getWayPoint(routId: String): LiveData<Response<List<List<RoutWayPoint>>>> {
+    return MutableLiveData<Response<List<List<RoutWayPoint>>>>().apply {
+      shuttleService.getWayPoint(routId)
+          .enqueue(object : Callback<List<List<RoutWayPoint>>> {
+            override fun onFailure(
+              call: Call<List<List<RoutWayPoint>>>,
+              t: Throwable
+            ) {
+              Log.e("repository", "get way point error", t)
+            }
 
-          override fun onResponse(
-            call: Call<List<List<RoutWayPoint>>>,
-            response: Response<List<List<RoutWayPoint>>>
-          ) {
-            wayPointLiveData.value = (response.body()
-                ?.get(0))
-          }
+            override fun onResponse(
+              call: Call<List<List<RoutWayPoint>>>,
+              response: Response<List<List<RoutWayPoint>>>
+            ) {
+              value = response
+            }
 
-        })
+          })
+    }
   }
 
   fun getAllRoutes(): LiveData<Response<List<Route>>> {
     return MutableLiveData<Response<List<Route>>>().apply {
-      shuttleService.getRoutes()
+      shuttleService.getAllRoute()
           .enqueue(object : Callback<List<Route>> {
             override fun onFailure(
               call: Call<List<Route>>,

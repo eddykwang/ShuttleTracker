@@ -17,7 +17,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -32,14 +34,22 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.maps.android.SphericalUtil
 import com.skydoves.powerspinner.OnSpinnerItemSelectedListener
 import com.studio.eddy.myapplication.dagger.MyApplication
+import kotlinx.android.synthetic.main.fragment_more_info.more_info_share_fab
 import kotlinx.android.synthetic.main.fragment_real_time_map.get_my_location_bt
 import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_appbarlayout
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_collapsing_toolbar
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_fab
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_recycler_view
 import java.util.Collections
 import java.util.Timer
@@ -58,6 +68,9 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private var isMarkerRotating = false
   private lateinit var vehicleTimerTask: TimerTask
   private lateinit var myLocation: LatLng
+  private lateinit var bottomSheetBehavior: BottomSheetBehavior<ConstraintLayout>
+  private lateinit var selectedRoute: Route
+  private var isDarkModeEnabled: Boolean = false
 
   private val adapter: TrackerAdapter by lazy { TrackerAdapter() }
 
@@ -94,12 +107,12 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
           item: String
         ) {
           Log.d(TAG, "$item selected, pos = $position")
-          val selected = routeList[position]
+          selectedRoute = routeList[position]
           clearAllVehicleMarkers()
           if (::vehicleTimerTask.isInitialized) {
             vehicleTimerTask.cancel()
           }
-          drawMapResrouce(selected)
+          drawMapResrouce(selectedRoute)
           sharedPreference.storeLastSelectedRout(routeList[position].iD)
         }
 
@@ -122,6 +135,34 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     bottom_sheet_recycler_view.apply {
       layoutManager = LinearLayoutManager(context)
       adapter = adapter
+    }
+    bottomSheetBehavior = BottomSheetBehavior.from(bottom_sheet)
+
+    bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+      override fun onSlide(
+        bottomSheet: View,
+        slideOffset: Float
+      ) {
+        if (::selectedRoute.isInitialized && slideOffset == bottomSheet.height / 2F) {
+          bottom_sheet_collapsing_toolbar.title = selectedRoute.name
+        }
+      }
+
+      override fun onStateChanged(
+        bottomSheet: View,
+        newState: Int
+      ) {
+        if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+          bottom_sheet_appbarlayout.setExpanded(false)
+        } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+          bottom_sheet_appbarlayout.setExpanded(true)
+        }
+      }
+
+    })
+
+    bottom_sheet_fab.setOnClickListener {
+      bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
     }
   }
 
@@ -171,7 +212,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
       }
     }
     Timer().scheduleAtFixedRate(
-        vehicleTimerTask, 0, 5000
+        vehicleTimerTask, 0, VEHICLE_UPDATE_FREQUENT
     )
   }
 
@@ -185,7 +226,11 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
               PolylineOptions()
                   .clickable(true)
                   .addAll(it)
-                  .color(Color.parseColor(color))
+                  .color(
+                      ContextCompat.getColor(
+                          context!!, Util.materialColorMapper(id, isDarkModeEnabled)
+                      )
+                  )
           )
           mMap.animateCamera(
               CameraUpdateFactory.newLatLngZoom(
@@ -207,7 +252,9 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
                       .position(LatLng(routStop.latitude, routStop.longitude))
                       .title(routStop.name)
                       .icon(
-                          Util.bitmapDescriptorFromVector(context!!, R.drawable.ic_bus_stop, null)
+                          Util.bitmapDescriptorFromVector(
+                              context!!, R.drawable.ic_bus_stop_sign_3, null, 1.3f
+                          )
                       )
               )
 
@@ -223,36 +270,36 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
           bottom_sheet_recycler_view.adapter = adapter
           it.apply {
             if (vehicleMarks.isEmpty()) {
-              forEach { routVechicle ->
+              forEach { routVehicle ->
                 val marker = MarkerOptions()
-                    .position(LatLng(routVechicle.latitude, routVechicle.longitude))
+                    .position(LatLng(routVehicle.latitude, routVehicle.longitude))
                     .icon(
                         Util.bitmapDescriptorFromVector(
-                            context!!, R.drawable.ic_navigation_black_24dp, null
+                            context!!, R.drawable.ic_shuttle_4, null, 1.4f
                         )
                     )
+                    .anchor(0.5f, 0.5f)
+                    .title(this[0].name)
                 vehicleMarks.add(mMap.addMarker(marker))
               }
             } else {
-              var counter = 0;
-              forEach { routVechicle ->
-                if (counter < vehicleMarks.size) {
-                  val oldMarker = vehicleMarks[counter]
+              forEachIndexed { index, routVehicle ->
+                if (index < vehicleMarks.size) {
+                  val oldMarker = vehicleMarks[index]
                   val oldPos = oldMarker.position
-                  val newPos = LatLng(routVechicle.latitude, routVechicle.longitude)
-                  oldMarker.position = newPos
-//                Util.changePositionSmoothly(oldMarker, newPos)
+                  val newPos = LatLng(routVehicle.latitude, routVehicle.longitude)
+                  Util.changePositionSmoothly(oldMarker, newPos)
+                  rotateMarker(
+                      oldMarker,
+                      SphericalUtil.computeHeading(oldPos, newPos)
+                          .toFloat()
+                  )
                   mMap.animateCamera(
                       CameraUpdateFactory.newLatLngZoom(
                           newPos,
                           16f
                       )
                   )
-                  rotateMarker(
-                      oldMarker, Util.bearingBetweenLocations(oldPos, newPos)
-                      .toFloat()
-                  )
-                  counter++
                 }
               }
             }
@@ -278,7 +325,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
             MarkerOptions().position(LatLng(p0.latitude, p0.longitude))
                 .icon(
                     Util.bitmapDescriptorFromVector(
-                        context!!, R.drawable.ic_radio_button_checked_black_24dp, null
+                        context!!, R.drawable.ic_radio_button_checked_black_24dp, null, 1f
                     )
                 )
                 .title("My Location")
@@ -322,6 +369,9 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
       mMap = p0
       mMap.apply {
         mapType = GoogleMap.MAP_TYPE_NORMAL
+        if (isDarkModeEnabled) {
+          setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_night_style))
+        }
       }
     }
   }
@@ -357,5 +407,6 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   companion object {
     @JvmStatic
     private val TAG = RealTimeMapFragment::class.java.simpleName
+    const val VEHICLE_UPDATE_FREQUENT = 5000L
   }
 }

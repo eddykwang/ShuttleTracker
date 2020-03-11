@@ -1,9 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#0277BD</color>
-    <color name="colorPrimaryDark">#01579B</color>
-    <color name="colorAccent">#FF4081</color>
-    <color name="warning">#78909C</color>
-    <color name="about_bg">#346994</color>
-    <color name="white">#ffffff</color>
+  <color name="colorPrimary">#0277BD</color>
+  <color name="colorPrimaryDark">#01579B</color>
+  <color name="colorAccent">#FF4081</color>
+  <color name="warning">#78909C</color>
+  <color name="about_bg">#346994</color>
+  <color name="white">#ffffff</color>
+  <color name="ucsd_accent">#CEB25B</color>
+
+
+  <color name="ID_13273">#F48C16</color>
+  <color name="ID_10306">#C73E24</color>
+  <color name="ID_11496">#DD4523</color>
+  <color name="ID_3442">#B5A70E</color>
+  <color name="ID_13933">#5E5C6C</color>
+  <color name="ID_13948">#202342</color>
+  <color name="ID_13946">#467535</color>
+  <color name="ID_2399">#5D88CE</color>
+  <color name="ID_13638">#463547</color>
+  <color name="ID_13668">#413A72</color>
+  <color name="ID_12565">#664B42</color>
+
+  <color name="ID_13273_dark">#FFB25B</color>
+  <color name="ID_10306_dark">#EF6A4C</color>
+  <color name="ID_11496_dark">#FFA18C</color>
+  <color name="ID_3442_dark">#DDD48B</color>
+  <color name="ID_13933_dark">#DCE3EF</color>
+  <color name="ID_13948_dark">#A5ADCD</color>
+  <color name="ID_13946_dark">#8DBA7C</color>
+  <color name="ID_2399_dark">#6B91CE</color>
+  <color name="ID_13638_dark">#CB9ACC</color>
+  <color name="ID_13668_dark">#BEB8EB</color>
+  <color name="ID_12565_dark">#FFC7B5</color>
 </resources>
