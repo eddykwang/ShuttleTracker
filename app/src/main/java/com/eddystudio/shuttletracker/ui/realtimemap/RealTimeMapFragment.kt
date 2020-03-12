@@ -18,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
@@ -34,6 +35,7 @@ import com.eddystudio.shuttletracker.ui.realtimemap.TrackerAdapter
 import com.eddystudio.shuttletracker.util.Util
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMap.OnCameraMoveStartedListener
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
@@ -43,10 +45,14 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.snackbar.BaseTransientBottomBar
+import com.google.android.material.snackbar.Snackbar
 import com.google.maps.android.SphericalUtil
 import com.skydoves.powerspinner.OnSpinnerItemSelectedListener
 import com.studio.eddy.myapplication.dagger.MyApplication
 import kotlinx.android.synthetic.main.fragment_real_time_map.get_my_location_bt
+import kotlinx.android.synthetic.main.fragment_real_time_map.real_time_coordinator_layout
+import kotlinx.android.synthetic.main.fragment_real_time_map.real_time_shuttle_focus_fab
 import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_appbarlayout
@@ -59,7 +65,7 @@ import java.util.Timer
 import java.util.TimerTask
 import javax.inject.Inject
 
-class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
+class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedListener {
 
   @Inject lateinit var realTimeMapViewModelFactory: RealTimeMapViewModelFactory
   @Inject lateinit var sharedPreference: MySharedPreference
@@ -74,6 +80,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private lateinit var bottomSheetBehavior: BottomSheetBehavior<ConstraintLayout>
   private lateinit var selectedRoute: Route
   private var isDarkModeEnabled: Boolean = false
+  private var isCameraFollowShuttle = false
+  private var cameraFollowShuttleIndex = 0
 
   private val trackerAdapter: TrackerAdapter by lazy { TrackerAdapter(ArrayList()) }
 
@@ -102,6 +110,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
 
   private fun initViews() {
     initBottomSheetView()
+    initFab()
     handleOnBackPressed()
     rout_search_bar.apply {
       this.lifecycleOwner = viewLifecycleOwner
@@ -156,6 +165,14 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     })
   }
 
+  private fun scaleOffset(offset: Float): Float {
+    val newOffSet = 1f - offset * 4.25f
+    if (newOffSet <= 0) {
+      return 0f
+    }
+    return newOffSet
+  }
+
   private fun initBottomSheetView() {
     bottom_sheet_recycler_view.apply {
       layoutManager = LinearLayoutManager(context)
@@ -168,6 +185,9 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
         bottomSheet: View,
         slideOffset: Float
       ) {
+
+        real_time_shuttle_focus_fab.scaleX = scaleOffset(slideOffset)
+        real_time_shuttle_focus_fab.scaleY = scaleOffset(slideOffset)
 
         if (::selectedRoute.isInitialized && slideOffset > 0.5) {
           bottom_sheet_collapsing_toolbar_layout.title = selectedRoute.name
@@ -202,6 +222,33 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     bottom_sheet_fab.setOnClickListener {
       bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
     }
+  }
+
+  private fun initFab() {
+    real_time_shuttle_focus_fab.setOnClickListener {
+      if (::mMap.isInitialized && vehicleMarks.size > 0) {
+        isCameraFollowShuttle = true
+        if (cameraFollowShuttleIndex + 1 >= vehicleMarks.size) {
+          cameraFollowShuttleIndex = 0
+        } else {
+          cameraFollowShuttleIndex++
+        }
+        moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, 16f)
+        showSnackBar("Shuttle: ${vehicleMarks[cameraFollowShuttleIndex].title}")
+      } else {
+        showSnackBar("There is no running shuttle at this moment!")
+      }
+    }
+  }
+
+  private fun showSnackBar(message: String) {
+    Snackbar.make(
+            real_time_coordinator_layout,
+            message,
+            BaseTransientBottomBar.LENGTH_LONG
+        )
+        .setAnchorView(real_time_shuttle_focus_fab)
+        .show()
   }
 
   private fun clearAllVehicleMarkers() {
@@ -243,6 +290,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
         override fun run() {
           val handler = Handler(Looper.getMainLooper())
           handler.post {
+            isCameraFollowShuttle = false
             drawVehiclesFroRout(route.iD.toString())
             getCurrentLocation()
           }
@@ -315,7 +363,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
                     .position(LatLng(routVehicle.latitude, routVehicle.longitude))
                     .icon(
                         Util.bitmapDescriptorFromVector(
-                            context!!, R.drawable.ic_shuttle_4, null, 1.4f
+                            context!!, R.drawable.ic_shuttle_6, null, 1.4f
                         )
                     )
                     .anchor(0.5f, 0.5f)
@@ -334,17 +382,26 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
                       SphericalUtil.computeHeading(oldPos, newPos)
                           .toFloat()
                   )
-                  mMap.animateCamera(
-                      CameraUpdateFactory.newLatLngZoom(
-                          newPos,
-                          16f
-                      )
-                  )
                 }
+              }
+              if (isCameraFollowShuttle && cameraFollowShuttleIndex < vehicleMarks.size) {
+                moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, 16f)
               }
             }
           }
         })
+  }
+
+  private fun moveCameraTo(
+    pos: LatLng,
+    scale: Float
+  ) {
+    mMap.animateCamera(
+        CameraUpdateFactory.newLatLngZoom(
+            pos,
+            scale
+        )
+    )
   }
 
   private fun getCurrentLocation() {
@@ -361,6 +418,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     val locationListener = object : LocationListener {
       override fun onLocationChanged(p0: Location?) {
         if (p0 == null || context == null) return
+
         mMap.addMarker(
             MarkerOptions().position(LatLng(p0.latitude, p0.longitude))
                 .icon(
@@ -407,12 +465,22 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   override fun onMapReady(p0: GoogleMap?) {
     if (p0 != null) {
       mMap = p0
-      mMap.apply {
-        mapType = GoogleMap.MAP_TYPE_NORMAL
+      mMap.let {
+        it.mapType = GoogleMap.MAP_TYPE_NORMAL
         if (isDarkModeEnabled) {
-          setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_night_style))
+          it.setMapStyle(
+              MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_night_style)
+          )
         }
+        it.setOnCameraMoveStartedListener(this)
       }
+
+    }
+  }
+
+  override fun onCameraMoveStarted(p0: Int) {
+    if (p0 == OnCameraMoveStartedListener.REASON_GESTURE) {
+      isCameraFollowShuttle = false
     }
   }
 
@@ -449,4 +517,5 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     private val TAG = RealTimeMapFragment::class.java.simpleName
     const val VEHICLE_UPDATE_FREQUENT = 5000L
   }
+
 }

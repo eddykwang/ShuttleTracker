@@ -2,6 +2,7 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:map="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/real_time_coordinator_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
@@ -16,11 +17,11 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        map:uiCompass="true"
-        map:uiRotateGestures="true"
+        map:uiCompass="false"
+        map:uiRotateGestures="false"
         map:uiScrollGestures="true"
         map:uiTiltGestures="true"
-        map:uiZoomControls="true"
+        map:uiZoomControls="false"
         map:uiZoomGestures="true"
         />
 
@@ -60,4 +61,16 @@
         />
   </androidx.constraintlayout.widget.ConstraintLayout>
   <include layout="@layout/realtime_bottom_sheet_view"/>
+  <com.google.android.material.floatingactionbutton.FloatingActionButton
+      android:id="@+id/real_time_shuttle_focus_fab"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="bottom|end"
+      android:layout_marginEnd="16dp"
+      app:srcCompat="@drawable/ic_shuttle_6"
+      app:tint="@color/fab_icon_color"
+      android:tintMode="multiply"
+      app:backgroundTint="@color/fab_bg_color"
+      android:layout_marginBottom="90dp"
+      />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

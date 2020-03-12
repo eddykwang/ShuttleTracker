@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.eddystudio.shuttletracker.R
 import com.eddystudio.shuttletracker.data.model.EmptySpace
+import com.eddystudio.shuttletracker.data.model.EmptySpace.Companion.TYPE.SHUTTLE
+import com.eddystudio.shuttletracker.data.model.EmptySpace.Companion.TYPE.STOP
 import com.eddystudio.shuttletracker.data.model.RoutStop
 import com.eddystudio.shuttletracker.data.model.RoutVehicle
 import com.eddystudio.shuttletracker.ui.realtimemap.TrackerAdapter.BaseViewHolder
@@ -74,7 +76,7 @@ class TrackerAdapter(val list: ArrayList<Any>) : RecyclerView.Adapter<BaseViewHo
     val hasTitle = hasTitle("Stops:")
     val newList = ArrayList<Any>().apply {
       if (!hasTitle) {
-        add(EmptySpace(1, "Stops:"))
+        add(EmptySpace(1, "Stops:", STOP))
       }
       addAll(data)
     }
@@ -87,8 +89,11 @@ class TrackerAdapter(val list: ArrayList<Any>) : RecyclerView.Adapter<BaseViewHo
     val hasTitle = hasTitle("Shuttles:")
 
     val newList = ArrayList<Any>().apply {
-      add(EmptySpace(1, "Shuttles:"))
-
+      if (data.isEmpty()) {
+        add(EmptySpace(1, "No shuttles running", SHUTTLE))
+      } else {
+        add(EmptySpace(1, "Shuttles:", SHUTTLE))
+      }
       addAll(data)
     }
 
@@ -96,7 +101,7 @@ class TrackerAdapter(val list: ArrayList<Any>) : RecyclerView.Adapter<BaseViewHo
           val iterator = this.iterator()
           while (iterator.hasNext()) {
             val nextData = iterator.next()
-            if (nextData is RoutVehicle || ((nextData is EmptySpace) && nextData.title == "Shuttles:")) {
+            if (nextData is RoutVehicle || ((nextData is EmptySpace) && nextData.type == SHUTTLE)) {
               iterator.remove()
             }
           }
