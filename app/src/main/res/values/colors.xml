@@ -8,6 +8,9 @@
   <color name="white">#ffffff</color>
   <color name="ucsd_accent">#CEB25B</color>
 
+  <color name="fab_bg_color">#FF4081</color>
+  <color name="fab_icon_color">#fff</color>
+
   <color name="light_gray">#30000000</color>
 
   <color name="ID_13273">#F48C16</color>

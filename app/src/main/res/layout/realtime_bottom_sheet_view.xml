@@ -88,6 +88,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="24dp"
+        app:tint="@color/fab_icon_color"
+        app:backgroundTint="@color/fab_bg_color"
         app:srcCompat="@drawable/ic_expand_more_black_24dp"
         />
   </androidx.coordinatorlayout.widget.CoordinatorLayout>
