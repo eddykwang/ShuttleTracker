@@ -5,11 +5,15 @@
   <color name="colorAccent">#FF4081</color>
   <color name="warning">#78909C</color>
   <color name="about_bg">#346994</color>
-  <color name="white">#ffffff</color>
-  <color name="ucsd_accent">#CEB25B</color>
+  <color name="white">#F0F0F0</color>
+  <color name="grey">#2E2E2E</color>
+<!--  <color name="primary">#41739D</color>-->
+<!--  <color name="ucsd_accent">#7891A5</color>-->
+  <color name="primary">#617E8B</color>
+  <color name="ucsd_accent">#7D95A0</color>
 
-  <color name="fab_bg_color">#FF4081</color>
-  <color name="fab_icon_color">#fff</color>
+  <color name="fab_bg_color">#7D95A0</color>
+  <color name="fab_icon_color">#F0F0F0</color>
 
   <color name="light_gray">#30000000</color>
 

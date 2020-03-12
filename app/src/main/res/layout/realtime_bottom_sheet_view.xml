@@ -31,7 +31,7 @@
           app:expandedTitleGravity="center"
           app:expandedTitleTextAppearance="@style/BottomSheet.CollapsedAppBar.expand"
           app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
-          app:title="Route Detail"
+          app:title="Route Details"
           >
 
 
