@@ -3,7 +3,6 @@ package com.studio.eddy.myapplication.ui.home
 import android.Manifest.permission
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -43,7 +42,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.maps.android.SphericalUtil
 import com.skydoves.powerspinner.OnSpinnerItemSelectedListener
 import com.studio.eddy.myapplication.dagger.MyApplication
-import kotlinx.android.synthetic.main.fragment_more_info.more_info_share_fab
 import kotlinx.android.synthetic.main.fragment_real_time_map.get_my_location_bt
 import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
@@ -72,7 +70,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private lateinit var selectedRoute: Route
   private var isDarkModeEnabled: Boolean = false
 
-  private val adapter: TrackerAdapter by lazy { TrackerAdapter() }
+  private val trackerAdapter: TrackerAdapter by lazy { TrackerAdapter(ArrayList()) }
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -134,7 +132,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private fun initBottomSheetView() {
     bottom_sheet_recycler_view.apply {
       layoutManager = LinearLayoutManager(context)
-      adapter = adapter
+      this.adapter = trackerAdapter
     }
     bottomSheetBehavior = BottomSheetBehavior.from(bottom_sheet)
 
@@ -244,6 +242,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private fun drawStopsForRout(id: String) {
     realTimeMapViewModel.getRoutStops(id)
         .observe(viewLifecycleOwner, Observer {
+          trackerAdapter.addStopsData(it)
           it.apply {
             forEach() { routStop ->
               Log.d(TAG, "draw stop for ${routStop.name}")
@@ -266,8 +265,9 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
   private fun drawVehiclesFroRout(id: String) {
     realTimeMapViewModel.getRutVehicles(id)
         .observe(viewLifecycleOwner, Observer {
-          adapter.setData(it)
-          bottom_sheet_recycler_view.adapter = adapter
+//          trackerAdapter.removeAllRoutStop()
+//          trackerAdapter.addDataToPos(it,0)
+          trackerAdapter.addVehicleData(it)
           it.apply {
             if (vehicleMarks.isEmpty()) {
               forEach { routVehicle ->
