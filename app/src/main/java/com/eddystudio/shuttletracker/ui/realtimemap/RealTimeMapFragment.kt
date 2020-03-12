@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,12 +18,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
+import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.eddystudio.shuttletracker.R
 import com.eddystudio.shuttletracker.data.MySharedPreference
@@ -46,9 +50,10 @@ import kotlinx.android.synthetic.main.fragment_real_time_map.get_my_location_bt
 import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_appbarlayout
-import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_collapsing_toolbar
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_collapsing_toolbar_layout
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_fab
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_recycler_view
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_toolbar
 import java.util.Collections
 import java.util.Timer
 import java.util.TimerTask
@@ -97,6 +102,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
 
   private fun initViews() {
     initBottomSheetView()
+    handleOnBackPressed()
     rout_search_bar.apply {
       this.lifecycleOwner = viewLifecycleOwner
       this.setOnSpinnerItemSelectedListener(object : OnSpinnerItemSelectedListener<String> {
@@ -129,6 +135,27 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
     }
   }
 
+  private fun handleOnBackPressed() {
+    requireActivity().onBackPressedDispatcher.addCallback(
+        viewLifecycleOwner, object : OnBackPressedCallback(
+        bottomSheetBehavior.state == BottomSheetBehavior.STATE_COLLAPSED
+    ) {
+      override fun handleOnBackPressed() {
+        if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+          bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        } else {
+          if (!findNavController().navigateUp()) {
+            if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+              activity?.finishAndRemoveTask()
+            } else {
+              activity?.finish()
+            }
+          }
+        }
+      }
+    })
+  }
+
   private fun initBottomSheetView() {
     bottom_sheet_recycler_view.apply {
       layoutManager = LinearLayoutManager(context)
@@ -141,8 +168,11 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
         bottomSheet: View,
         slideOffset: Float
       ) {
-        if (::selectedRoute.isInitialized && slideOffset == bottomSheet.height / 2F) {
-          bottom_sheet_collapsing_toolbar.title = selectedRoute.name
+
+        if (::selectedRoute.isInitialized && slideOffset > 0.5) {
+          bottom_sheet_collapsing_toolbar_layout.title = selectedRoute.name
+        } else {
+          bottom_sheet_collapsing_toolbar_layout.title = getString(R.string.bottom_sheet_title)
         }
       }
 
@@ -158,6 +188,16 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback {
       }
 
     })
+
+    bottom_sheet_toolbar.setOnClickListener {
+      if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_COLLAPSED) {
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+
+      } else if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+      }
+    }
+
 
     bottom_sheet_fab.setOnClickListener {
       bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED

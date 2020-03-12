@@ -13,6 +13,8 @@
   <string name="title_more">More</string>
   <string name="title_activity_maps">Map</string>
 
+  <string name="bottom_sheet_title">Route Details</string>
+
   <string name="app_description">UCSD Shuttle Tracker is an Ad-free and open-source shuttle
     tracking app for Tritons, which was originally developed in 2015 as a hobby. It\'s re-designed and re-written in 2020
     Spring. Thanks for who\'s still supporting this app, let\'s make it better together. More features will be coming soon.

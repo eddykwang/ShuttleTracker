@@ -23,7 +23,7 @@
         android:background="@color/colorPrimary"
         >
       <com.google.android.material.appbar.CollapsingToolbarLayout
-          android:id="@+id/bottom_sheet_collapsing_toolbar"
+          android:id="@+id/bottom_sheet_collapsing_toolbar_layout"
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
           app:collapsedTitleTextAppearance="@style/CollapsedAppBar.normal"
@@ -31,7 +31,7 @@
           app:expandedTitleGravity="center"
           app:expandedTitleTextAppearance="@style/BottomSheet.CollapsedAppBar.expand"
           app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
-          app:title="Route Detail"
+          app:title="@string/bottom_sheet_title"
           >
 
 
@@ -58,6 +58,7 @@
 
 
         <androidx.appcompat.widget.Toolbar
+            android:id="@+id/bottom_sheet_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:layout_collapseMode="pin"
