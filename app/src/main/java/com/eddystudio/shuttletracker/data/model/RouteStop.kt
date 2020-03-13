@@ -3,7 +3,7 @@ package com.eddystudio.shuttletracker.data.model
 
 import com.google.gson.annotations.SerializedName
 
-data class RoutStop(
+data class RouteStop(
     @SerializedName("ID")
     val iD: Int,
     @SerializedName("Image")

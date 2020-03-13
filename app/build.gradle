@@ -29,11 +29,17 @@ android {
   kotlinOptions {
     jvmTarget = "1.8"
   }
+
+  dataBinding {
+    enabled = true
+  }
 }
 
 dependencies {
   ext.dagger2_version = '2.26'
   ext.navigation_version = '2.2.1'
+
+  implementation 'com.github.eddykwang:quickrecyclerviewadapter:1.02'
 
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
   implementation 'androidx.appcompat:appcompat:1.1.0'

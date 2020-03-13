@@ -18,20 +18,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Interpolator
 import android.view.animation.LinearInterpolator
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.eddystudio.quickrecyclerviewadapterlib.QuickRecyclerViewAdapter
+import com.eddystudio.shuttletracker.BR
 import com.eddystudio.shuttletracker.R
 import com.eddystudio.shuttletracker.data.MySharedPreference
 import com.eddystudio.shuttletracker.data.model.Route
-import com.eddystudio.shuttletracker.ui.realtimemap.TrackerAdapter
+import com.eddystudio.shuttletracker.data.model.RouteStop
+import com.eddystudio.shuttletracker.databinding.FragmentRealTimeMapBinding
+import com.eddystudio.shuttletracker.ui.realtimemap.RouteStopClickListener
+import com.eddystudio.shuttletracker.ui.realtimemap.RouteStopViewData
+import com.eddystudio.shuttletracker.ui.realtimemap.VehicleInfoViewData
 import com.eddystudio.shuttletracker.util.Util
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -58,8 +64,10 @@ import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_appbarlayout
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_collapsing_toolbar_layout
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_fab
-import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_recycler_view
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_shuttle_recycler_view
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_stops_recycler_view
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_toolbar
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_vehicle_title_tv
 import java.util.Collections
 import java.util.Timer
 import java.util.TimerTask
@@ -69,21 +77,35 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
 
   @Inject lateinit var realTimeMapViewModelFactory: RealTimeMapViewModelFactory
   @Inject lateinit var sharedPreference: MySharedPreference
+  private lateinit var binding: FragmentRealTimeMapBinding
   private lateinit var realTimeMapViewModel: RealTimeMapViewModel
   private lateinit var mMap: GoogleMap
   private lateinit var mapFragment: SupportMapFragment
   private lateinit var routeList: List<Route>
   private val vehicleMarks = Collections.synchronizedList<Marker>(ArrayList())
-  private var isMarkerRotating = false
+  private val markerRotatingMap: HashMap<String, Boolean> = HashMap()
   private lateinit var vehicleTimerTask: TimerTask
   private lateinit var myLocation: LatLng
   private lateinit var bottomSheetBehavior: BottomSheetBehavior<ConstraintLayout>
   private lateinit var selectedRoute: Route
+  private var lastSelectedStopViewData: RouteStopViewData? = null
+  private lateinit var stopClickListener: RouteStopClickListener
+  private val stopViewDataList = ArrayList<RouteStopViewData>()
   private var isDarkModeEnabled: Boolean = false
   private var isCameraFollowShuttle = false
   private var cameraFollowShuttleIndex = 0
 
-  private val trackerAdapter: TrackerAdapter by lazy { TrackerAdapter(ArrayList()) }
+  private val stopsAdapter by lazy {
+    QuickRecyclerViewAdapter<RouteStopViewData>(
+        ArrayList(), R.layout.rout_stop_item_view, BR.stopViewData
+    )
+  }
+
+  private val vehicleAdapter by lazy {
+    QuickRecyclerViewAdapter<VehicleInfoViewData>(
+        ArrayList(), R.layout.rout_vehicle_item_view, BR.vehicleViewData
+    )
+  }
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -94,7 +116,10 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
     MyApplication.component.inject(this)
     realTimeMapViewModel = ViewModelProvider(this, realTimeMapViewModelFactory)
         .get(RealTimeMapViewModel::class.java)
-    return inflater.inflate(R.layout.fragment_real_time_map, container, false)
+
+    binding = DataBindingUtil.inflate(inflater, R.layout.fragment_real_time_map, container, false)
+    binding.lifecycleOwner = viewLifecycleOwner
+    return binding.root
   }
 
   override fun onViewCreated(
@@ -105,7 +130,11 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
     mapFragment = childFragmentManager.findFragmentById(R.id.google_map) as SupportMapFragment
     mapFragment.getMapAsync(this)
     initViews()
-    setupObservers()
+  }
+
+  override fun onStart() {
+    super.onStart()
+    setupAllRoutes()
   }
 
   private fun initViews() {
@@ -134,12 +163,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
 
     get_my_location_bt.setOnClickListener {
       if (::mMap.isInitialized && ::myLocation.isInitialized) {
-        mMap.animateCamera(
-            CameraUpdateFactory.newLatLngZoom(
-                myLocation,
-                15f
-            )
-        )
+        moveCameraTo(myLocation, 16f)
+        isCameraFollowShuttle = false
       }
     }
   }
@@ -174,10 +199,33 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
   }
 
   private fun initBottomSheetView() {
-    bottom_sheet_recycler_view.apply {
-      layoutManager = LinearLayoutManager(context)
-      this.adapter = trackerAdapter
+
+    stopClickListener = object : RouteStopClickListener {
+      override fun OnRouteStopClicked(routeStop: RouteStop) {
+
+        lastSelectedStopViewData?.hideDetails()
+
+        realTimeMapViewModel.getBusArrivalByStopId(routeStop.iD.toString())
+            .observe(viewLifecycleOwner, Observer {
+              stopViewDataList.forEach { routeStopViewData ->
+                if (routeStopViewData.routeStop.iD == routeStop.iD) {
+                  routeStopViewData.setArrivalInfo(it, selectedRoute)
+                  lastSelectedStopViewData = routeStopViewData
+                }
+              }
+            })
+      }
     }
+
+    bottom_sheet_stops_recycler_view.apply {
+      layoutManager = LinearLayoutManager(context)
+      this.adapter = stopsAdapter
+    }
+    bottom_sheet_shuttle_recycler_view.apply {
+      layoutManager = LinearLayoutManager(context)
+      this.adapter = vehicleAdapter
+    }
+
     bottomSheetBehavior = BottomSheetBehavior.from(bottom_sheet)
 
     bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
@@ -233,7 +281,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
         } else {
           cameraFollowShuttleIndex++
         }
-        moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, 16f)
+        moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, VEHICLE_CAMERA_DIST)
         showSnackBar("Shuttle: ${vehicleMarks[cameraFollowShuttleIndex].title}")
       } else {
         showSnackBar("There is no running shuttle at this moment!")
@@ -256,10 +304,6 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
       maker.remove()
     }
     vehicleMarks.clear()
-  }
-
-  private fun setupObservers() {
-    setupAllRoutes()
   }
 
   private fun setupAllRoutes() {
@@ -290,7 +334,6 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
         override fun run() {
           val handler = Handler(Looper.getMainLooper())
           handler.post {
-            isCameraFollowShuttle = false
             drawVehiclesFroRout(route.iD.toString())
             getCurrentLocation()
           }
@@ -328,9 +371,14 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
   }
 
   private fun drawStopsForRout(id: String) {
-    realTimeMapViewModel.getRoutStops(id)
+    realTimeMapViewModel.getRouteStops(id)
         .observe(viewLifecycleOwner, Observer {
-          trackerAdapter.addStopsData(it)
+          stopViewDataList.clear()
+          stopViewDataList.addAll(it.map { stop ->
+            RouteStopViewData(stop, stopClickListener)
+          })
+          stopsAdapter.itemList.clear()
+          stopsAdapter.SetItemList(stopViewDataList)
           it.apply {
             forEach() { routStop ->
               Log.d(TAG, "draw stop for ${routStop.name}")
@@ -351,11 +399,17 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
   }
 
   private fun drawVehiclesFroRout(id: String) {
-    realTimeMapViewModel.getRutVehicles(id)
+    realTimeMapViewModel.getRouteVehicles(id)
         .observe(viewLifecycleOwner, Observer {
-//          trackerAdapter.removeAllRoutStop()
-//          trackerAdapter.addDataToPos(it,0)
-          trackerAdapter.addVehicleData(it)
+          if (it.isEmpty()) {
+            bottom_sheet_vehicle_title_tv.visibility = View.GONE
+          } else {
+            bottom_sheet_vehicle_title_tv.visibility = View.VISIBLE
+          }
+          vehicleAdapter.itemList.clear()
+          vehicleAdapter.SetItemList(it.map { vehicle ->
+            VehicleInfoViewData(vehicle)
+          })
           it.apply {
             if (vehicleMarks.isEmpty()) {
               forEach { routVehicle ->
@@ -367,7 +421,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
                         )
                     )
                     .anchor(0.5f, 0.5f)
-                    .title(this[0].name)
+                    .title(routVehicle.name)
                 vehicleMarks.add(mMap.addMarker(marker))
               }
             } else {
@@ -385,7 +439,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
                 }
               }
               if (isCameraFollowShuttle && cameraFollowShuttleIndex < vehicleMarks.size) {
-                moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, 16f)
+                moveCameraTo(vehicleMarks[cameraFollowShuttleIndex].position, VEHICLE_CAMERA_DIST)
               }
             }
           }
@@ -488,7 +542,14 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
     marker: Marker,
     toRotation: Float
   ) {
-    if (!isMarkerRotating) {
+    var isRotating = markerRotatingMap[marker.title]
+
+    if (isRotating == null) {
+      markerRotatingMap[marker.title] = false
+      isRotating = false
+    }
+
+    if (!isRotating) {
       val handler = Handler()
       val start = SystemClock.uptimeMillis()
       val startRotation = marker.rotation
@@ -496,7 +557,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
       val interpolator: Interpolator = LinearInterpolator()
       handler.post(object : Runnable {
         override fun run() {
-          isMarkerRotating = true
+          markerRotatingMap[marker.title] = true
           val elapsed = SystemClock.uptimeMillis() - start
           val t: Float = interpolator.getInterpolation(elapsed.toFloat() / duration)
           val rot = t * toRotation + (1 - t) * startRotation
@@ -505,7 +566,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
             // Post again 16ms later.
             handler.postDelayed(this, 16)
           } else {
-            isMarkerRotating = false
+            markerRotatingMap[marker.title] = false
           }
         }
       })
@@ -516,6 +577,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
     @JvmStatic
     private val TAG = RealTimeMapFragment::class.java.simpleName
     const val VEHICLE_UPDATE_FREQUENT = 5000L
+
+    const val VEHICLE_CAMERA_DIST = 17f
   }
 
 }

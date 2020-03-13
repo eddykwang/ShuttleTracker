@@ -3,7 +3,8 @@ package com.studio.eddy.myapplication.network
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.eddystudio.shuttletracker.data.model.RoutStop
+import com.eddystudio.shuttletracker.data.model.BusArrival
+import com.eddystudio.shuttletracker.data.model.RouteStop
 import com.eddystudio.shuttletracker.data.model.RoutVehicle
 import com.eddystudio.shuttletracker.data.model.Route
 import com.studio.eddy.myapplication.data.RoutWayPoint
@@ -60,20 +61,20 @@ class Repository @Inject constructor(private val shuttleService: ShuttleService)
     }
   }
 
-  fun getRouteStops(id: String): LiveData<Response<List<RoutStop>>> {
-    return MutableLiveData<Response<List<RoutStop>>>().apply {
+  fun getRouteStops(id: String): LiveData<Response<List<RouteStop>>> {
+    return MutableLiveData<Response<List<RouteStop>>>().apply {
       shuttleService.getStopsForRout(id)
-          .enqueue(object : Callback<List<RoutStop>> {
+          .enqueue(object : Callback<List<RouteStop>> {
             override fun onFailure(
-              call: Call<List<RoutStop>>,
+              call: Call<List<RouteStop>>,
               t: Throwable
             ) {
               Log.e("repository", "get stops error", t)
             }
 
             override fun onResponse(
-              call: Call<List<RoutStop>>,
-              response: Response<List<RoutStop>>
+              call: Call<List<RouteStop>>,
+              response: Response<List<RouteStop>>
             ) {
               value = response
             }
@@ -100,6 +101,27 @@ class Repository @Inject constructor(private val shuttleService: ShuttleService)
               value = response
             }
 
+          })
+    }
+  }
+
+  fun getArrivalByStopId(id: String): LiveData<Response<List<BusArrival>>> {
+    return MutableLiveData<Response<List<BusArrival>>>().apply {
+      shuttleService.getArrivalByStopId(id)
+          .enqueue(object : Callback<List<BusArrival>> {
+            override fun onFailure(
+              call: Call<List<BusArrival>>,
+              t: Throwable
+            ) {
+              Log.e("repository", "get bus arrival error", t)
+            }
+
+            override fun onResponse(
+              call: Call<List<BusArrival>>,
+              response: Response<List<BusArrival>>
+            ) {
+              value = response
+            }
           })
     }
   }
