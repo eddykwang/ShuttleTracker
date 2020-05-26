@@ -25,7 +25,7 @@ class RouteStopViewData(
   }
 
   fun onStopClicked() {
-    routStopClickListener.OnRouteStopClicked(routeStop)
+    routStopClickListener.onRouteStopClicked(routeStop)
   }
 
   fun setArrivalInfo(

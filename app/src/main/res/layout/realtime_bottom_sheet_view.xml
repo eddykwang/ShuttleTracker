@@ -82,11 +82,9 @@
             android:id="@+id/bottom_sheet_vehicle_title_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
             android:fontFamily="monospace"
-            android:text="Stops"
+            android:padding="16dp"
+            android:text="Shuttles :"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -99,21 +97,35 @@
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
             />
-        <TextView
-            android:id="@+id/empty_space_title"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="monospace"
-            android:text="Stops"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            />
+            android:orientation="horizontal"
+            android:padding="16dp"
+            >
+          <TextView
+              android:id="@+id/empty_space_title"
+              android:layout_width="wrap_content"
+              android:layout_height="32dp"
+              android:layout_weight="1"
+              android:fontFamily="monospace"
+              android:text="Stops :"
+              android:textAppearance="@style/TextAppearance.AppCompat.Large"
+              android:textStyle="bold"
+              app:layout_constraintBottom_toBottomOf="parent"
+              app:layout_constraintStart_toStartOf="parent"
+              app:layout_constraintTop_toTopOf="parent"
+              />
+
+          <ProgressBar
+              android:id="@+id/bottom_sheet_detail_loading"
+              android:layout_width="32dp"
+              android:layout_height="32dp"
+              android:layout_gravity="center_vertical"
+              android:layout_weight="0"
+              android:visibility="gone"
+              />
+        </LinearLayout>
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/bottom_sheet_stops_recycler_view"
             android:layout_width="match_parent"

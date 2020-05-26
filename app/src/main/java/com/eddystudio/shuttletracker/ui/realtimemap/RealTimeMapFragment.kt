@@ -63,6 +63,7 @@ import kotlinx.android.synthetic.main.fragment_real_time_map.rout_search_bar
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_appbarlayout
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_collapsing_toolbar_layout
+import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_detail_loading
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_fab
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_shuttle_recycler_view
 import kotlinx.android.synthetic.main.realtime_bottom_sheet_view.bottom_sheet_stops_recycler_view
@@ -201,8 +202,8 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
   private fun initBottomSheetView() {
 
     stopClickListener = object : RouteStopClickListener {
-      override fun OnRouteStopClicked(routeStop: RouteStop) {
-
+      override fun onRouteStopClicked(routeStop: RouteStop) {
+        bottom_sheet_detail_loading.visibility = View.VISIBLE
         lastSelectedStopViewData?.hideDetails()
 
         realTimeMapViewModel.getBusArrivalByStopId(routeStop.iD.toString())
@@ -213,6 +214,7 @@ class RealTimeMapFragment : Fragment(), OnMapReadyCallback, OnCameraMoveStartedL
                   lastSelectedStopViewData = routeStopViewData
                 }
               }
+              bottom_sheet_detail_loading.visibility = View.GONE
             })
       }
     }
